@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"github.com/cilium/ebpf/link"
 )
@@ -31,5 +30,5 @@ func main() {
 	l.Unpin()
 	l.Close()
 
-	fmt.Println("Link unpinned")
+	log.Println("Link unpinned")
 }

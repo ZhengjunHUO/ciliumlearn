@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net"
-	"encoding/binary"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
@@ -43,13 +40,13 @@ func main() {
 	egressMap := collection.Maps[egressMapName]
 	ingressMap := collection.Maps[ingressMapName]
 
-	ip_egs := binary.LittleEndian.Uint32(net.ParseIP("8.8.4.4").To4())
+	ip_egs := ipv4ToUint32("8.8.4.4")
 	bTrue := true
 	if err = egressMap.Put(&ip_egs, &bTrue); err != nil {
 		log.Fatalln(err)
 	}
 
-	ip_igs := binary.LittleEndian.Uint32(net.ParseIP("172.17.0.2").To4())
+	ip_igs := ipv4ToUint32("172.17.0.2")
 	if err = ingressMap.Put(&ip_igs, &bTrue); err != nil {
 		log.Fatalln(err)
 	}
@@ -80,5 +77,5 @@ func main() {
 	lnk_igs.Pin(ingressLinkPinPath)
 	lnk_igs.Close()
 
-	fmt.Println("eBPF program attached.")
+	log.Println("eBPF program attached.")
 }

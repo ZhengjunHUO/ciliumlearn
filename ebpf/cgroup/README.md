@@ -4,12 +4,17 @@ To apply to a container, change cgroupPath in attach.go
 ```bash
 # compile and attach ebpf program to cgroup
 make
-go run translate.go attach.go
+./attach
 ```
 
 # Test
 - ctn1	172.17.0.2
 - ctn2	172.17.0.3 run a service on port 80
+
+## Enable tracing process
+```bash
+./trace
+```
 
 ## Test ingress rule attached to ctn2
 ```bash
@@ -26,6 +31,6 @@ ping: sendto: Operation not permitted
 
 # detach program
 ```bash
-go run detach.go
+./detach
 make clean
 ```

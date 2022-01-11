@@ -38,10 +38,10 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     bool isBanned;
     if (isIngress) {
         bpf_printk("Ingress from %lu",iphd.saddr);
-        isBanned = !bpf_map_lookup_elem(&ingress_blacklist, &iphd.saddr);
+        isBanned = bpf_map_lookup_elem(&ingress_blacklist, &iphd.saddr);
     }else{
         bpf_printk("Egress to %lu",iphd.daddr);
-        isBanned = !bpf_map_lookup_elem(&egress_blacklist, &iphd.daddr);
+        isBanned = bpf_map_lookup_elem(&egress_blacklist, &iphd.daddr);
     }
 
     pkt p = {
@@ -53,7 +53,8 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
 
     bpf_map_push_elem(&data_flow, &p, BPF_ANY);
 
-    return isBanned;
+    // return 0 => drop
+    return !isBanned;
 }
 
 SEC("cgroup_skb/ingress")

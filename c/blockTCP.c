@@ -10,7 +10,7 @@
 #endif
 
 SEC("ingress")
-int drop_icmp(struct __sk_buff *skb) {
+int drop_tcp(struct __sk_buff *skb) {
     void *data = (void*)(long)skb->data;
     void *data_end = (void*)(long)skb->data_end;
 
@@ -29,7 +29,7 @@ int drop_icmp(struct __sk_buff *skb) {
 
     /* IN IP HEADER CHECK UPPER PROTOCOL */
     struct iphdr *ip_hd = data + ETH_HLEN;
-    // Not icmp packet, allow to proceed
+    // Not tcp packet, allow to proceed
     if (ip_hd->protocol != IPPROTO_TCP)
         return TC_ACT_OK;
 

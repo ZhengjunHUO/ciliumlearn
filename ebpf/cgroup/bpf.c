@@ -32,22 +32,30 @@ struct bpf_map_def SEC("maps") data_flow = {
 };
 
 static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
-    struct iphdr iphd;
-    bpf_skb_load_bytes(skb, 0, &iphd, sizeof(struct iphdr));
+    void *data = (void*)(long)skb->data;
+    void *data_end = (void*)(long)skb->data_end;
+
+    __u32 tcphdr_offset = sizeof(struct iphdr);
+
+    // avoid verifier's complain
+    if (data + tcphdr_offset > data_end)
+        return 1;
+
+    struct iphdr *iphd = data;
 
     bool isBanned;
     if (isIngress) {
-        bpf_printk("Ingress from %lu",iphd.saddr);
-        isBanned = bpf_map_lookup_elem(&ingress_blacklist, &iphd.saddr);
+        bpf_printk("Ingress from %lu",iphd->saddr);
+        isBanned = bpf_map_lookup_elem(&ingress_blacklist, &iphd->saddr);
     }else{
-        bpf_printk("Egress to %lu",iphd.daddr);
-        isBanned = bpf_map_lookup_elem(&egress_blacklist, &iphd.daddr);
+        bpf_printk("Egress to %lu",iphd->daddr);
+        isBanned = bpf_map_lookup_elem(&egress_blacklist, &iphd->daddr);
     }
 
     pkt p = {
-        .saddr = iphd.saddr,
-	.daddr = iphd.daddr,
-	.proto = iphd.protocol,
+        .saddr = iphd->saddr,
+	.daddr = iphd->daddr,
+	.proto = iphd->protocol,
 	.bitmap = isBanned | (isIngress << 1)
     };
 

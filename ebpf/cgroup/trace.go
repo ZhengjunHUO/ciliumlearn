@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	dataflowPinPath    = "/sys/fs/bpf/dataflow_map"
+	bpfPath = "/sys/fs/bpf/"
 )
 
 type entry struct {
@@ -24,6 +24,20 @@ type entry struct {
 }
 
 func main() {
+	// Wait a container name as argument
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s <containerName|containerId>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	// Get container's full ID
+	cgroupId := GetContainerID(os.Args[1])
+	if len(cgroupId) == 0 {
+		os.Exit(1)
+	}
+
+	dataflowPinPath := bpfPath + cgroupId + "_dataflow_map"
+
 	// restore data flow map from pinned file on bpffs
 	fl, err := ebpf.LoadPinnedMap(dataflowPinPath, nil)
 	if err != nil {

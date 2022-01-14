@@ -13,7 +13,7 @@ build_ebpf: bpf.c
 build_prog: build_ebpf attach.go trace.go detach.go translate.go
 	$(CGO_ENV) $(GOCOMPILER) build -o attach attach.go translate.go
 	$(CGO_ENV) $(GOCOMPILER) build -o trace trace.go translate.go
-	$(CGO_ENV) $(GOCOMPILER) build -o detach detach.go
+	$(CGO_ENV) $(GOCOMPILER) build -o detach detach.go translate.go
 
 clean:
 	$(RM) bpf.o attach trace detach

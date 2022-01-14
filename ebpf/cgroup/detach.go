@@ -2,18 +2,33 @@ package main
 
 import (
 	"log"
+	"fmt"
 	"os"
 
 	"github.com/cilium/ebpf/link"
 )
 
 const (
-	egressLinkPinPath  = "/sys/fs/bpf/cgroup_egs_link"
-	ingressLinkPinPath = "/sys/fs/bpf/cgroup_igs_link"
-	dataflowPinPath    = "/sys/fs/bpf/dataflow_map"
+	bpfPath		= "/sys/fs/bpf/"
 )
 
 func main() {
+	// Wait a container name as argument
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s <containerName|containerId>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	// Get container's full ID
+	cgroupId := GetContainerID(os.Args[1])
+	if len(cgroupId) == 0 {
+		os.Exit(1)
+	}
+
+	dataflowPinPath := bpfPath + cgroupId + "_dataflow_map"
+	egressLinkPinPath := bpfPath + cgroupId + "_cgroup_egs_link"
+	ingressLinkPinPath := bpfPath + cgroupId + "_cgroup_igs_link"
+
 	// restore link from pinned file on bpffs
 	l, err := link.LoadPinnedCgroup(egressLinkPinPath, nil)
 	if err != nil {

@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"fmt"
+	"os"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
@@ -9,9 +11,6 @@ import (
 )
 
 const (
-	//cgroupPath      = "/sys/fs/cgroup/system.slice/docker-746823468eb932764abff0bc416aa39d96037d201976b293ccb66c10c4702567.scope"
-	cgroupPath	= "/sys/fs/cgroup/system.slice/docker-5b81537a967793cf5c8b562bd5b9cb6b55045ed339ed328390f70d466aa84134.scope"
-
 	bpfProgName	= "bpf.o"
 	egressFuncName  = "egress_filter"
 	ingressFuncName = "ingress_filter"
@@ -20,12 +19,25 @@ const (
 	ingressMapName  = "ingress_blacklist"
 	flowMapName	= "data_flow"
 
-	egressLinkPinPath  = "/sys/fs/bpf/cgroup_egs_link"
-	ingressLinkPinPath = "/sys/fs/bpf/cgroup_igs_link"
-	dataflowPinPath    = "/sys/fs/bpf/dataflow_map"
+	bpfPath		= "/sys/fs/bpf/"
 )
 
 func main() {
+	// Wait a container name as argument
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s <containerName|containerId>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	// Get container's full ID
+	cgroupId := GetContainerID(os.Args[1])
+	if len(cgroupId) == 0 {
+		os.Exit(1)
+	}
+
+	// Get related cgroup path
+	cgroupPath := fmt.Sprintf("/sys/fs/cgroup/system.slice/docker-%s.scope", cgroupId)
+
 	/* remove ebpf lock memory limit */
 	if err := rlimit.RemoveMemlock(); err != nil {
 		log.Fatalln(err)
@@ -43,6 +55,8 @@ func main() {
 	egressMap := collection.Maps[egressMapName]
 	ingressMap := collection.Maps[ingressMapName]
 	flowMap := collection.Maps[flowMapName]
+
+	dataflowPinPath := bpfPath + cgroupId + "_dataflow_map"
 	flowMap.Pin(dataflowPinPath)
 
 	ip_egs := ipv4ToUint32("8.8.4.4")
@@ -75,6 +89,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	egressLinkPinPath := bpfPath + cgroupId + "_cgroup_egs_link"
+	ingressLinkPinPath := bpfPath + cgroupId + "_cgroup_igs_link"
 	/* pin link to the bpffs */
 	lnk_egs.Pin(egressLinkPinPath)
 	lnk_egs.Close()

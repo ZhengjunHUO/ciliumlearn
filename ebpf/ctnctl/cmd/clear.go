@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/pkg"
 )
 
 // clearCmd represents the clear command
@@ -29,7 +30,9 @@ var clearCmd = &cobra.Command{
 	Long: `Clear container's firewall rules`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("clear called")
+		if err := pkg.RemovePinnedResource(args[0]); err != nil {
+			fmt.Println(err)
+		}
 	},
 }
 

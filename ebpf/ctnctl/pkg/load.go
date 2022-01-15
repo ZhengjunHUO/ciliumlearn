@@ -15,10 +15,11 @@ func LoadPinnedMap(name string, isIngress bool) (*ebpf.Map, error) {
         }
 
 	var path string
+	pinPath := bpfPath + cgroupId
 	if isIngress {
-		path = bpfPath + cgroupId + "_igs_map"
+		path = pinPath + "/igs_map"
 	}else{
-		path = bpfPath + cgroupId + "_egs_map"
+		path = pinPath + "/egs_map"
 	}
 
 	loadedMap, err := ebpf.LoadPinnedMap(path, nil)

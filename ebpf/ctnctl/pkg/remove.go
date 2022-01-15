@@ -14,11 +14,12 @@ func RemovePinnedResource(name string) error {
 		return errors.New("Invalid container name or id!\n")
 	}
 
-	dataflowPinPath := bpfPath + cgroupId + "_dataflow_map"
-	egressMapPinPath := bpfPath + cgroupId + "_egs_map"
-	ingressMapPinPath := bpfPath + cgroupId + "_igs_map"
-	egressLinkPinPath := bpfPath + cgroupId + "_cgroup_egs_link"
-	ingressLinkPinPath := bpfPath + cgroupId + "_cgroup_igs_link"
+	pinPath := bpfPath + cgroupId
+	dataflowPinPath := pinPath + "/dataflow_map"
+	egressMapPinPath := pinPath + "/egs_map"
+	ingressMapPinPath := pinPath + "/igs_map"
+	egressLinkPinPath := pinPath + "/cgroup_egs_link"
+	ingressLinkPinPath := pinPath + "/cgroup_igs_link"
 
 	// restore link from pinned file on bpffs
 	l, err := link.LoadPinnedCgroup(egressLinkPinPath, nil)
@@ -42,6 +43,7 @@ func RemovePinnedResource(name string) error {
 	os.Remove(dataflowPinPath)
 	os.Remove(egressMapPinPath)
 	os.Remove(ingressMapPinPath)
+	os.Remove(bpfPath + cgroupId)
 
 	return nil
 }

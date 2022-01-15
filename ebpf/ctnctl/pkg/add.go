@@ -20,16 +20,20 @@ func CreateLinkIfNotExit(name string) error {
 	// Get related cgroup path
 	cgroupPath := "/sys/fs/cgroup/system.slice/docker-"+cgroupId+".scope"
 
-	dataflowPinPath := bpfPath + cgroupId + "_dataflow_map"
-	egressMapPinPath := bpfPath + cgroupId + "_egs_map"
-	ingressMapPinPath := bpfPath + cgroupId + "_igs_map"
-
-	egressLinkPinPath := bpfPath + cgroupId + "_cgroup_egs_link"
-	ingressLinkPinPath := bpfPath + cgroupId + "_cgroup_igs_link"
+	pinPath := bpfPath + cgroupId
+	dataflowPinPath := pinPath + "/dataflow_map"
+	egressMapPinPath := pinPath + "/egs_map"
+	ingressMapPinPath := pinPath + "/igs_map"
+	egressLinkPinPath := pinPath + "/cgroup_egs_link"
+	ingressLinkPinPath := pinPath + "/cgroup_igs_link"
 
 	if _, err := os.Stat(dataflowPinPath); err == nil {
 		// file exist, return directly
 		return nil
+	}
+
+	if err := os.Mkdir(pinPath, os.ModePerm); err != nil {
+		return err
 	}
 
 	/* remove ebpf lock memory limit */

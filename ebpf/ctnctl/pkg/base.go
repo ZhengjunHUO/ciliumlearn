@@ -17,6 +17,10 @@ const (
 	bpfPath		= "/sys/fs/bpf/"
 )
 
+var (
+	allLinks	= []string{"/cgroup_egs_link", "/cgroup_igs_link"}
+	allMaps		= []string{"/dataflow_map", "/egs_map", "/igs_map"}
+)
 
 // Return container's fullid and cgroup path
 //   eg. /sys/fs/cgroup/system.slice/docker-5b81537a967793cf5c8b562bd5b9cb6b55045ed339ed328390f70d466aa84134.scope

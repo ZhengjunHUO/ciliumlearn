@@ -23,36 +23,30 @@ func RemovePinnedResource(name string) error {
 		return nil
 	}
 
-	dataflowPinPath := pinPath + "/dataflow_map"
-	egressMapPinPath := pinPath + "/egs_map"
-	ingressMapPinPath := pinPath + "/igs_map"
-	egressLinkPinPath := pinPath + "/cgroup_egs_link"
-	ingressLinkPinPath := pinPath + "/cgroup_igs_link"
+	// unpin all links related to container
+	for i := range allLinks {
+		l, err := link.LoadPinnedCgroup(pinPath + allLinks[i], nil)
+		if err != nil {
+			return err
+		}
 
-	// restore link from pinned file on bpffs
-	l, err := link.LoadPinnedCgroup(egressLinkPinPath, nil)
-	if err != nil {
-		return err
+		l.Unpin()
+		l.Close()
 	}
 
-	// remove the file on bpffs
-	l.Unpin()
-	l.Close()
+	// unpin all maps related to container
+	for i := range allMaps {
+		m, err := ebpf.LoadPinnedMap(pinPath + allMaps[i], nil)
+		if err != nil {
+			return err
+		}
 
-	l, err = link.LoadPinnedCgroup(ingressLinkPinPath, nil)
-	if err != nil {
-		return err
+		m.Unpin()
+		m.Close()
 	}
 
-	// remove the file on bpffs
-	l.Unpin()
-	l.Close()
-
-	os.Remove(dataflowPinPath)
-	os.Remove(egressMapPinPath)
-	os.Remove(ingressMapPinPath)
+	// remove container's folder under /sys/fs/bpf
 	os.Remove(bpfPath + cgroupId)
-
 	return nil
 }
 

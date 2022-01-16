@@ -91,11 +91,10 @@ func CreateLinkIfNotExit(name string) error {
 }
 
 func AddIP(ip, name string, isIngress bool) error {
-	//var fw *ebpf.Map
-	//fw, err := LoadPinnedMap(fw, name, isIngress)
+	var fw *ebpf.Map
 	bTrue := true
 
-	fw, err := LoadPinnedMap(name, isIngress)
+	err := LoadPinnedMap(&fw, name, isIngress)
 	if err != nil {
 		return err
 	}

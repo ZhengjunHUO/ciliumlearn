@@ -4,6 +4,7 @@ import (
 	"os"
 	"errors"
 
+	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/tools"
 )
@@ -56,7 +57,8 @@ func RemovePinnedResource(name string) error {
 }
 
 func DelIP(ip, name string, isIngress bool) error {
-	fw, err := LoadPinnedMap(name, isIngress)
+	var fw *ebpf.Map
+	err := LoadPinnedMap(&fw, name, isIngress)
 	if err != nil {
 		return err
 	}

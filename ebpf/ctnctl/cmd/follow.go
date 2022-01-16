@@ -17,24 +17,18 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
+	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/pkg"
 )
 
 // followCmd represents the follow command
 var followCmd = &cobra.Command{
 	Use:   "follow [flags] <CONTAINER_NAME|CONTAINER_ID>",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Print out the container's traffic flow",
+	Long: `Print out the container's traffic flow`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("follow called: %s\n", args[0])
+		pkg.DebugFlow(args[0])
 	},
 }
 

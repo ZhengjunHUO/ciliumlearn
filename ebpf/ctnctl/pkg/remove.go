@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/cilium/ebpf/link"
+	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/tools"
 )
 
 func RemovePinnedResource(name string) error {
@@ -14,7 +15,13 @@ func RemovePinnedResource(name string) error {
 		return errors.New("Invalid container name or id!\n")
 	}
 
+	// check if dir still exist
 	pinPath := bpfPath + cgroupId
+	if _, err := os.Stat(pinPath); err != nil {
+		// dir doesn't exist, return directly
+		return nil
+	}
+
 	dataflowPinPath := pinPath + "/dataflow_map"
 	egressMapPinPath := pinPath + "/egs_map"
 	ingressMapPinPath := pinPath + "/igs_map"
@@ -44,6 +51,20 @@ func RemovePinnedResource(name string) error {
 	os.Remove(egressMapPinPath)
 	os.Remove(ingressMapPinPath)
 	os.Remove(bpfPath + cgroupId)
+
+	return nil
+}
+
+func DelIP(ip, name string, isIngress bool) error {
+	fw, err := LoadPinnedMap(name, isIngress)
+	if err != nil {
+		return err
+	}
+
+	ipToAdd := tools.Ipv4ToUint32(ip)
+	if err := fw.Delete(&ipToAdd); err != nil {
+		return err
+	}
 
 	return nil
 }

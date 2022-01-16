@@ -17,9 +17,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+	"os"
+	"net"
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/pkg"
 )
 
 // unblockCmd represents the unblock command
@@ -29,12 +32,46 @@ var unblockCmd = &cobra.Command{
 	Long: `Remove an ip from container's blacklist`,
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("unblock called: %v, %v\n", isIngress, isEgress)
+		// wait a -i or -e flag
+		if isIngressUnb == isEgressUnb {
+			fmt.Println("Need to specifiy ONE flag -i or -e!")
+			os.Exit(1)
+		}
+
+		// check the input "ip" is valid
+		if ip := net.ParseIP(args[0]); ip == nil {
+			fmt.Println("Not a valid IP!")
+			os.Exit(1)
+		}
+
+		// Add IP to firewall
+		//var err error
+		if isIngressUnb {
+		//	err = pkg.DelIP(args[0], args[1], true)
+			pkg.DelIP(args[0], args[1], true)
+		}
+
+		if isEgressUnb {
+		//	err = pkg.DelIP(args[0], args[1], false)
+			pkg.DelIP(args[0], args[1], false)
+		}
+
+		/*
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		*/
 	},
 }
 
+var (
+	isIngressUnb bool
+	isEgressUnb bool
+)
+
 func init() {
 	rootCmd.AddCommand(unblockCmd)
-	unblockCmd.Flags().BoolVarP(&isIngress, "ingress", "i", false, "update the ingress table")
-	unblockCmd.Flags().BoolVarP(&isEgress, "egress", "e", false, "update the egress table")
+	unblockCmd.Flags().BoolVarP(&isIngressUnb, "ingress", "i", false, "update the ingress table")
+	unblockCmd.Flags().BoolVarP(&isEgressUnb, "egress", "e", false, "update the egress table")
 }

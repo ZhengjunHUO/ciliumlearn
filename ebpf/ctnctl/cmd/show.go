@@ -17,9 +17,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
+	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/pkg"
 )
 
 // showCmd represents the show command
@@ -29,7 +28,7 @@ var showCmd = &cobra.Command{
 	Long: `Show container's firewall rules`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("show called")
+		pkg.PrintFirewall(args[0])
 	},
 }
 

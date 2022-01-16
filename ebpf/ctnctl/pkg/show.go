@@ -20,7 +20,53 @@ type entry struct {
 	Bitmap	uint8
 }
 
-func DebugFlow(name string) error {
+func PrintFirewall(name string) {
+	// Get container's full ID
+	cgroupId := GetContainerID(name)
+	if len(cgroupId) == 0 {
+		fmt.Println("Invalid container name or id!\n")
+	}
+
+	// Check if dir exist
+	pinPath := bpfPath + cgroupId
+	if _, err := os.Stat(pinPath); err != nil {
+		// no ebpf rules
+		return
+	}
+
+	// load pinned firewalls
+	egressMapPinPath := pinPath + "/egs_map"
+	ingressMapPinPath := pinPath + "/igs_map"
+
+	emap, err := ebpf.LoadPinnedMap(egressMapPinPath, nil)
+	if err != nil {
+		return
+	}
+
+	imap, err := ebpf.LoadPinnedMap(ingressMapPinPath, nil)
+	if err != nil {
+		return
+	}
+
+	var (
+		key uint32
+		value bool
+	)
+
+	fmt.Println("Blocked egress ips [To]:")
+	entries := emap.Iterate()
+	for entries.Next(&key, &value) {
+		fmt.Printf("\t%s\n", tools.Uint32ToIPv4(key))
+	}
+
+	fmt.Println("\nBlocked ingress ips [From]:")
+	entries = imap.Iterate()
+	for entries.Next(&key, &value) {
+		fmt.Printf("\t%s\n", tools.Uint32ToIPv4(key))
+	}
+}
+
+func PrintDataflow(name string) error {
 	// Get container's full ID
 	cgroupId := GetContainerID(name)
 	if len(cgroupId) == 0 {
@@ -30,7 +76,7 @@ func DebugFlow(name string) error {
 	// Check if dir exist
 	pinPath := bpfPath + cgroupId
 	if _, err := os.Stat(pinPath); err != nil {
-		// file exist, return directly
+		// dir not exist
 		return err
 	}
 

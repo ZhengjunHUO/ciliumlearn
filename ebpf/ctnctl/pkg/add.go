@@ -3,6 +3,7 @@ package pkg
 import (
 	"os"
 	"errors"
+	"bytes"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
@@ -45,7 +46,13 @@ func CreateLinkIfNotExit(name string) error {
 
 	// Pin links and maps
 	/* load precompiled bpf program */
-	collection, err := ebpf.LoadCollection(bpfProgName)
+	//collection, err := ebpf.LoadCollection(bpfProgName)
+	spec, err := ebpf.LoadCollectionSpecFromReader(bytes.NewReader(bpfProgBytes))
+	if err != nil {
+		return err
+	}
+
+	collection, err := ebpf.NewCollection(spec)
 	if err != nil {
 		return err
 	}

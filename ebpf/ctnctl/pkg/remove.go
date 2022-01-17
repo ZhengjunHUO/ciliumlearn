@@ -9,6 +9,7 @@ import (
 	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/tools"
 )
 
+// Clean up the resources related to the container
 func RemovePinnedResource(name string) error {
 	// Get container's full ID
 	cgroupId := GetContainerID(name)
@@ -50,6 +51,7 @@ func RemovePinnedResource(name string) error {
 	return nil
 }
 
+// Delete an ip from the ingress/egress firewall (map)
 func DelIP(ip, name string, isIngress bool) error {
 	var fw *ebpf.Map
 	err := LoadPinnedMap(&fw, name, isIngress)

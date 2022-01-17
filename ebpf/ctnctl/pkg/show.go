@@ -13,6 +13,12 @@ import (
 	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/tools"
 )
 
+/*
+Bitmap: 8 bits
+  00000000
+        ||- isBanned
+	|-- isIngress
+*/
 type entry struct {
 	Saddr	uint32
 	Daddr	uint32
@@ -20,6 +26,7 @@ type entry struct {
 	Bitmap	uint8
 }
 
+// Show all rules related to container
 func PrintFirewall(name string) {
 	// Get container's full ID
 	cgroupId := GetContainerID(name)
@@ -53,6 +60,7 @@ func PrintFirewall(name string) {
 		value bool
 	)
 
+	// Dump all the ingress/egress rules from maps
 	fmt.Println("Blocked egress ips [To]:")
 	entries := emap.Iterate()
 	for entries.Next(&key, &value) {
@@ -66,6 +74,7 @@ func PrintFirewall(name string) {
 	}
 }
 
+// Follow packet flows associated to container
 func PrintDataflow(name string) error {
 	// Get container's full ID
 	cgroupId := GetContainerID(name)
@@ -110,18 +119,22 @@ func PrintDataflow(name string) error {
 				for fl.LookupAndDelete(nil, &ent) == nil {
 					saddr, daddr = tools.Uint32ToIPv4(ent.Saddr), tools.Uint32ToIPv4(ent.Daddr)
 					isIngress, isBanned = ((ent.Bitmap & 2) >> 1) == 1, (ent.Bitmap & 1) == 1
+
+					// identify the protocol name
 					if val, ok := protocols[ent.Proto]; ok {
 						protocolName = val
 					}else{
 						protocolName = strconv.Itoa(int(ent.Proto))
 					}
 
+					// prepare the log to print
 					if isIngress {
 						entlog = fmt.Sprintf("%s IN %s > %s", protocolName, saddr, daddr)
 					}else{
 						entlog = fmt.Sprintf("%s OUT %s > %s", protocolName, saddr, daddr)
 					}
 
+					// update the log if the packet is banned
 					if isBanned {
 						entlog += " (BANNED)"
 					}
@@ -129,6 +142,7 @@ func PrintDataflow(name string) error {
 					fmt.Println(entlog)
 				}
 			case <- chInt:
+				// quit on capturing the sigint, sigterm
 				break loop
 		}
 	}

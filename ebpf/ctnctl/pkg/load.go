@@ -5,6 +5,7 @@ import (
 	"github.com/cilium/ebpf"
 )
 
+// Find pinned map associated to container and load
 func LoadPinnedMap(loadedMap **ebpf.Map, name string, isIngress bool) error {
         // Get container's full ID
         cgroupId := GetContainerID(name)
@@ -20,6 +21,7 @@ func LoadPinnedMap(loadedMap **ebpf.Map, name string, isIngress bool) error {
 		path = pinPath + "/egs_map"
 	}
 
+	// Load pinned map
 	ret, err := ebpf.LoadPinnedMap(path, nil)
         if err != nil {
                 return err

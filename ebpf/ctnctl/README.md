@@ -1,9 +1,10 @@
 # Build
 ```bash
-CGO_ENABLED=0 go build ./
+make
+cp ctnctl /usr/local/bin/ctnctl
 ```
 
 # Run
 ```bash
-./ctnctl -h
+ctnctl -h
 ```

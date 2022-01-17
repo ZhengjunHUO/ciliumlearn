@@ -12,6 +12,7 @@ import (
 	"github.com/ZhengjunHUO/ciliumlearn/ebpf/ctnctl/tools"
 )
 
+// Load ebpf bytecode to kernel (if not loaded yet), pin links and maps to bpffs
 func CreateLinkIfNotExit(name string) error {
 	// Get container's full ID
 	cgroupId := GetContainerID(name)
@@ -44,8 +45,7 @@ func CreateLinkIfNotExit(name string) error {
 	egressLinkPinPath := pinPath + "/cgroup_egs_link"
 	ingressLinkPinPath := pinPath + "/cgroup_igs_link"
 
-	// Pin links and maps
-	/* load precompiled bpf program */
+	// load precompiled bpf program
 	//collection, err := ebpf.LoadCollection(bpfProgName)
 	spec, err := ebpf.LoadCollectionSpecFromReader(bytes.NewReader(bpfProgBytes))
 	if err != nil {
@@ -59,16 +59,17 @@ func CreateLinkIfNotExit(name string) error {
 	ingressFunc := collection.Programs[ingressFuncName]
 	egressFunc := collection.Programs[egressFuncName]
 
-	/* load map (temporary hardcode an entry to blacklist) */
+	// load maps
 	egressMap := collection.Maps[egressMapName]
 	ingressMap := collection.Maps[ingressMapName]
 	flowMap := collection.Maps[flowMapName]
 
+	// Pin maps
 	egressMap.Pin(egressMapPinPath)
 	ingressMap.Pin(ingressMapPinPath)
 	flowMap.Pin(dataflowPinPath)
 
-	/* attach bpf program to specific cgroup */
+	// attach bpf program to specific cgroup 
 	lnk_egs, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    cgroupPath,
 		Attach:  ebpf.AttachCGroupInetEgress,
@@ -87,7 +88,7 @@ func CreateLinkIfNotExit(name string) error {
 		return err
 	}
 
-	/* pin link to the bpffs */
+	// pin links
 	lnk_egs.Pin(egressLinkPinPath)
 	lnk_egs.Close()
 
@@ -97,6 +98,7 @@ func CreateLinkIfNotExit(name string) error {
 	return nil
 }
 
+// Add an ip to the ingress/egress firewall (map)
 func AddIP(ip, name string, isIngress bool) error {
 	var fw *ebpf.Map
 	bTrue := true

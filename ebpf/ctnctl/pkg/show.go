@@ -22,6 +22,8 @@ Bitmap: 8 bits
 type entry struct {
 	Saddr	uint32
 	Daddr	uint32
+	Sport	uint16
+	Dport	uint16
 	Proto	uint8
 	Bitmap	uint8
 }
@@ -127,11 +129,13 @@ func PrintDataflow(name string) error {
 						protocolName = strconv.Itoa(int(ent.Proto))
 					}
 
+					sport, dport := tools.Uint16ToPort(ent.Sport), tools.Uint16ToPort(ent.Dport)
+
 					// prepare the log to print
 					if isIngress {
-						entlog = fmt.Sprintf("%s IN %s > %s", protocolName, saddr, daddr)
+						entlog = fmt.Sprintf("%s IN %s:%v > %s:%v", protocolName, saddr, sport, daddr, dport)
 					}else{
-						entlog = fmt.Sprintf("%s OUT %s > %s", protocolName, saddr, daddr)
+						entlog = fmt.Sprintf("%s OUT %s:%v > %s:%v", protocolName, saddr, sport, daddr, dport)
 					}
 
 					// update the log if the packet is banned

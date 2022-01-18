@@ -17,3 +17,9 @@ func Uint32ToIPv4(n uint32) string {
 func Ipv4ToUint32(s string) uint32 {
 	return binary.LittleEndian.Uint32(net.ParseIP(s).To4())
 }
+
+func Uint16ToPort(n uint16) uint16 {
+	var port [2]byte
+	binary.LittleEndian.PutUint16(port[:], n)
+	return binary.BigEndian.Uint16(port[:])
+}

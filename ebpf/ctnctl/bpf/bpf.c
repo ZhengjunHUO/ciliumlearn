@@ -1,6 +1,8 @@
 #include <linux/bpf.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <netinet/udp.h>
+#include <netinet/in.h>
 #include <stdbool.h>
 #include "bpf_helpers.h"
 
@@ -62,14 +64,27 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     p.proto = iphd->protocol;
     p.bitmap = isBanned | (isIngress << 1);
 
-    struct tcphdr *tcphd = data + iphdr_len;
-    __u32 tcphdr_len = sizeof(struct tcphdr);
-    // avoid verifier's complain
-    if ((void *)tcphd + tcphdr_len > data_end)
-        return 1;
+    if (iphd->protocol == IPPROTO_TCP) {
+        struct tcphdr *tcphd = data + iphdr_len;
+        __u32 tcphdr_len = sizeof(struct tcphdr);
+        // avoid verifier's complain
+        if ((void *)tcphd + tcphdr_len > data_end)
+            return 1;
 
-    p.sport = tcphd->source;
-    p.dport = tcphd->dest;
+        p.sport = tcphd->source;
+        p.dport = tcphd->dest;
+    }
+
+    if (iphd->protocol == IPPROTO_UDP) {
+        struct udphdr *udphd = data + iphdr_len;
+        __u32 udphdr_len = sizeof(struct udphdr);
+        // avoid verifier's complain
+        if ((void *)udphd + udphdr_len > data_end)
+            return 1;
+
+        p.sport = udphd->source;
+        p.dport = udphd->dest;
+    }
 
     bpf_map_push_elem(&data_flow, &p, BPF_ANY);
 

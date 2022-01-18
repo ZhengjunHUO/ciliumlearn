@@ -1,11 +1,14 @@
 #include <linux/bpf.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 #include <stdbool.h>
 #include "bpf_helpers.h"
 
 typedef struct {
     __u32 saddr;
     __u32 daddr;
+    __u16 sport;
+    __u16 dport;
     __u8  proto;
     __u8  bitmap;
 } pkt;
@@ -28,20 +31,18 @@ struct bpf_map_def SEC("maps") data_flow = {
     .type = BPF_MAP_TYPE_QUEUE,
     .key_size = 0,
     .value_size = sizeof(pkt),
-    .max_entries = 10000,
+    .max_entries = 1000,
 };
 
 static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     void *data = (void*)(long)skb->data;
     void *data_end = (void*)(long)skb->data_end;
 
-    __u32 tcphdr_offset = sizeof(struct iphdr);
-
-    // avoid verifier's complain
-    if (data + tcphdr_offset > data_end)
-        return 1;
-
     struct iphdr *iphd = data;
+    __u32 iphdr_len = sizeof(struct iphdr);
+    // avoid verifier's complain
+    if (data + iphdr_len > data_end)
+        return 1;
 
     bool isBanned;
     if (isIngress) {
@@ -52,12 +53,23 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
         isBanned = bpf_map_lookup_elem(&egress_blacklist, &iphd->daddr);
     }
 
-    pkt p = {
-        .saddr = iphd->saddr,
-	.daddr = iphd->daddr,
-	.proto = iphd->protocol,
-	.bitmap = isBanned | (isIngress << 1)
-    };
+    pkt p;
+    // ensure the padding
+    __builtin_memset(&p, 0, sizeof(pkt));
+
+    p.saddr = iphd->saddr;
+    p.daddr = iphd->daddr;
+    p.proto = iphd->protocol;
+    p.bitmap = isBanned | (isIngress << 1);
+
+    struct tcphdr *tcphd = data + iphdr_len;
+    __u32 tcphdr_len = sizeof(struct tcphdr);
+    // avoid verifier's complain
+    if ((void *)tcphd + tcphdr_len > data_end)
+        return 1;
+
+    p.sport = tcphd->source;
+    p.dport = tcphd->dest;
 
     bpf_map_push_elem(&data_flow, &p, BPF_ANY);
 

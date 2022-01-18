@@ -133,9 +133,17 @@ func PrintDataflow(name string) error {
 
 					// prepare the log to print
 					if isIngress {
-						entlog = fmt.Sprintf("%s IN %s:%v > %s:%v", protocolName, saddr, sport, daddr, dport)
+						if ent.Proto == 1 {
+							entlog = fmt.Sprintf("%s IN %s > %s", protocolName, saddr, daddr)
+						}else{
+							entlog = fmt.Sprintf("%s IN %s:%v > %s:%v", protocolName, saddr, sport, daddr, dport)
+						}
 					}else{
-						entlog = fmt.Sprintf("%s OUT %s:%v > %s:%v", protocolName, saddr, sport, daddr, dport)
+						if ent.Proto == 1 {
+							entlog = fmt.Sprintf("%s OUT %s > %s", protocolName, saddr, daddr)
+						}else{
+							entlog = fmt.Sprintf("%s OUT %s:%v > %s:%v", protocolName, saddr, sport, daddr, dport)
+						}
 					}
 
 					// update the log if the packet is banned

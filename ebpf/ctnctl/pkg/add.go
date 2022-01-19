@@ -19,8 +19,14 @@ func CreateLinkIfNotExit(name string) error {
 	if len(cgroupId) == 0 {
 		return errors.New("Invalid container name or id!\n")
 	}
-	// Get related cgroup path
+	// Get related cgroup (v2, docker use systemd driver by default) path
 	cgroupPath := "/sys/fs/cgroup/system.slice/docker-"+cgroupId+".scope"
+	/*
+	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); err != nil {
+		// fallback to cgroup v1, docker use cgroupfs driver by default
+		cgroupPath = "/sys/fs/cgroup/net_cls,net_prio/docker/"+cgroupId
+	}
+	*/
 
 	// Check if dir exist
 	pinPath := bpfPath + cgroupId

@@ -38,11 +38,39 @@ var blockCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// check the input "ip" is valid
-		if ip := net.ParseIP(args[0]); ip == nil {
-			fmt.Println("Not a valid IP!")
+		// accept at most one flag between -t and -u
+		if isTCP && isUDP {
+			fmt.Println("Can't have -t and -u in the same time!")
 			os.Exit(1)
 		}
+
+		var ip string
+		port := 0
+
+		if isTCP {
+			if tcpaddr, err := net.ResolveTCPAddr("tcp", args[0]); err != nil {
+				fmt.Println("Not a valid tcp addr: ", err)
+				os.Exit(1)
+			}else{
+				ip, port = tcpaddr.IP.String(), tcpaddr.Port
+			}
+		}else if isUDP{
+			if udpaddr, err := net.ResolveUDPAddr("udp", args[0]); err != nil {
+				fmt.Println("Not a valid udp addr: ", err)
+				os.Exit(1)
+			}else{
+				ip, port = udpaddr.IP.String(), udpaddr.Port
+			}
+		}else{
+			// check the input "ip" is valid
+			if rslt := net.ParseIP(args[0]); rslt == nil {
+				fmt.Println("Not a valid IP!")
+				os.Exit(1)
+			}
+			ip = args[0]
+		}
+
+		fmt.Printf("[DEBUG] IP: %s; Port: %v\n", ip, port)
 
 		// Create and Pin / Load pinned bpf resources
 		if err := pkg.CreateLinkIfNotExit(args[1]); err != nil {
@@ -53,11 +81,11 @@ var blockCmd = &cobra.Command{
 		// Add IP to firewall
 		var err error
 		if isIngress {
-			err = pkg.AddIP(args[0], args[1], true)
+			err = pkg.AddIP(ip, args[1], true)
 		}
 
 		if isEgress {
-			err = pkg.AddIP(args[0], args[1], false)
+			err = pkg.AddIP(ip, args[1], false)
 		}
 
 		if err != nil {
@@ -70,11 +98,15 @@ var blockCmd = &cobra.Command{
 var (
 	isIngress bool
 	isEgress bool
+	isTCP bool
+	isUDP bool
 )
 
 func init() {
 	rootCmd.AddCommand(blockCmd)
 	blockCmd.Flags().BoolVarP(&isIngress, "ingress", "i", false, "update the ingress table")
 	blockCmd.Flags().BoolVarP(&isEgress, "egress", "e", false, "update the egress table")
+	blockCmd.Flags().BoolVarP(&isTCP, "tcp", "t", false, "indicate a tcp rule")
+	blockCmd.Flags().BoolVarP(&isUDP, "udp", "u", false, "indicate a udp rule")
 	//blockCmd.MarkFlagRequired("ingress")
 }

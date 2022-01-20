@@ -6,7 +6,7 @@ import (
 )
 
 // Find pinned map associated to container and load
-func LoadPinnedMap(loadedMap **ebpf.Map, name string, isIngress bool) error {
+func LoadPinnedMap(loadedMap **ebpf.Map, name string, isIngress, isL3 bool) error {
         // Get container's full ID
         cgroupId := GetContainerID(name)
         if len(cgroupId) == 0 {
@@ -15,10 +15,18 @@ func LoadPinnedMap(loadedMap **ebpf.Map, name string, isIngress bool) error {
 
 	var path string
 	pinPath := bpfPath + cgroupId
-	if isIngress {
-		path = pinPath + "/igs_map"
+	if isL3 {
+		if isIngress {
+			path = pinPath + "/igs_map"
+		}else{
+			path = pinPath + "/egs_map"
+		}
 	}else{
-		path = pinPath + "/egs_map"
+		if isIngress {
+			path = pinPath + "/igs_l4_map"
+		}else{
+			path = pinPath + "/egs_l4_map"
+		}
 	}
 
 	// Load pinned map

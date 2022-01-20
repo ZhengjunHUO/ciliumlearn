@@ -13,6 +13,8 @@ const (
 
 	egressMapName   = "egress_blacklist"
 	ingressMapName  = "ingress_blacklist"
+	egressL4MapName   = "egress_l4_blacklist"
+	ingressL4MapName  = "ingress_l4_blacklist"
 	flowMapName	= "data_flow"
 
 	bpfPath		= "/sys/fs/bpf/"
@@ -20,7 +22,7 @@ const (
 
 var (
 	allLinks	= []string{"/cgroup_egs_link", "/cgroup_igs_link"}
-	allMaps		= []string{"/dataflow_map", "/egs_map", "/igs_map"}
+	allMaps		= []string{"/dataflow_map", "/egs_map", "/igs_map", "/egs_l4_map", "/igs_l4_map"}
 )
 
 //go:embed bpf.o

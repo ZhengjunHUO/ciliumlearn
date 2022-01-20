@@ -15,6 +15,12 @@ typedef struct {
     __u8  bitmap;
 } pkt;
 
+typedef struct {
+    __u32 addr;
+    __u16 port;
+    __u16 reserved;
+} skt;
+
 struct bpf_map_def SEC("maps") ingress_blacklist = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(__u32),
@@ -25,6 +31,20 @@ struct bpf_map_def SEC("maps") ingress_blacklist = {
 struct bpf_map_def SEC("maps") egress_blacklist = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(__u32),
+    .value_size = sizeof(_Bool),
+    .max_entries = 1000,
+};
+
+struct bpf_map_def SEC("maps") ingress_l4_blacklist = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(skt),
+    .value_size = sizeof(_Bool),
+    .max_entries = 1000,
+};
+
+struct bpf_map_def SEC("maps") egress_l4_blacklist = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(skt),
     .value_size = sizeof(_Bool),
     .max_entries = 1000,
 };
@@ -46,14 +66,9 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     if (data + iphdr_len > data_end)
         return 1;
 
-    bool isBanned;
-    if (isIngress) {
-        bpf_printk("Ingress from %lu",iphd->saddr);
-        isBanned = bpf_map_lookup_elem(&ingress_blacklist, &iphd->saddr);
-    }else{
-        bpf_printk("Egress to %lu",iphd->daddr);
-        isBanned = bpf_map_lookup_elem(&egress_blacklist, &iphd->daddr);
-    }
+    skt s;
+    // initialize padding to avoid verifier's complain
+    __builtin_memset(&s, 0, sizeof(skt));
 
     pkt p;
     // initialize padding to avoid verifier's complain
@@ -62,7 +77,6 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     p.saddr = iphd->saddr;
     p.daddr = iphd->daddr;
     p.proto = iphd->protocol;
-    p.bitmap = isBanned | (isIngress << 1);
 
     if (iphd->protocol == IPPROTO_TCP) {
         struct tcphdr *tcphd = data + iphdr_len;
@@ -86,10 +100,34 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
         p.dport = udphd->dest;
     }
 
+    bool isBannedL3;
+    bool isBannedL4;
+    if (isIngress) {
+        //bpf_printk("Ingress from %lu",iphd->saddr);
+	s.addr = p.saddr;
+	// we don't care source port
+	s.port = p.dport;
+	isBannedL3 = bpf_map_lookup_elem(&ingress_blacklist, &iphd->saddr);
+	isBannedL4 = bpf_map_lookup_elem(&ingress_l4_blacklist, &s);
+    }else{
+        //bpf_printk("Egress to %lu",iphd->daddr);
+	s.addr = p.daddr;
+	s.port = p.dport;
+	isBannedL3 = bpf_map_lookup_elem(&egress_blacklist, &iphd->daddr);
+	isBannedL4 = bpf_map_lookup_elem(&egress_l4_blacklist, &s);
+    }
+
+    p.bitmap = (isBannedL3 << 1) | (isBannedL4 << 2) | isIngress;
+
     bpf_map_push_elem(&data_flow, &p, BPF_ANY);
 
     // return 0 => drop
-    return !isBanned;
+    if (p.bitmap > 1) {
+        return 0;
+    }
+
+    return 1;
+    //return !isBanned;
 }
 
 SEC("cgroup_skb/ingress")

@@ -38,24 +38,60 @@ var unblockCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// check the input "ip" is valid
-		if ip := net.ParseIP(args[0]); ip == nil {
-			fmt.Println("Not a valid IP!")
+		// accept at most one flag between -t and -u
+		if isTCPUnb && isUDPUnb {
+			fmt.Println("Can't have -t and -u in the same time!")
 			os.Exit(1)
 		}
 
+		var ip string
+		port := 0
+
+		if isTCPUnb {
+			if tcpaddr, err := net.ResolveTCPAddr("tcp", args[0]); err != nil {
+				fmt.Println("Not a valid tcp addr: ", err)
+				os.Exit(1)
+			}else{
+				ip, port = tcpaddr.IP.String(), tcpaddr.Port
+			}
+		}else if isUDPUnb{
+			if udpaddr, err := net.ResolveUDPAddr("udp", args[0]); err != nil {
+				fmt.Println("Not a valid udp addr: ", err)
+				os.Exit(1)
+			}else{
+				ip, port = udpaddr.IP.String(), udpaddr.Port
+			}
+		}else{
+			// check the input "ip" is valid
+			if rslt := net.ParseIP(args[0]); rslt == nil {
+				fmt.Println("Not a valid IP!")
+				os.Exit(1)
+			}
+			ip = args[0]
+		}
 		// Add IP to firewall
 		//var err error
-		if isIngressUnb {
+		//if isIngressUnb {
 		//	err = pkg.DelIP(args[0], args[1], true)
-			pkg.DelIP(args[0], args[1], true)
-		}
+		//	pkg.DelIP(args[0], args[1], isIngressUnb)
+		//}
 
-		if isEgressUnb {
+		//if isEgressUnb {
 		//	err = pkg.DelIP(args[0], args[1], false)
-			pkg.DelIP(args[0], args[1], false)
+		//	pkg.DelIP(args[0], args[1], false)
+		//}
+
+		var err error
+		if port != 0 {
+			err = pkg.DelIPPort(ip, args[1], uint16(port), isIngressUnb)
+		}else{
+			err = pkg.DelIP(ip, args[1], isIngressUnb)
 		}
 
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		/*
 		if err != nil {
 			fmt.Println(err)
@@ -68,10 +104,14 @@ var unblockCmd = &cobra.Command{
 var (
 	isIngressUnb bool
 	isEgressUnb bool
+	isTCPUnb bool
+	isUDPUnb bool
 )
 
 func init() {
 	rootCmd.AddCommand(unblockCmd)
 	unblockCmd.Flags().BoolVarP(&isIngressUnb, "ingress", "i", false, "update the ingress table")
 	unblockCmd.Flags().BoolVarP(&isEgressUnb, "egress", "e", false, "update the egress table")
+	unblockCmd.Flags().BoolVarP(&isTCPUnb, "tcp", "t", false, "indicate a tcp rule")
+	unblockCmd.Flags().BoolVarP(&isUDPUnb, "udp", "u", false, "indicate a udp rule")
 }

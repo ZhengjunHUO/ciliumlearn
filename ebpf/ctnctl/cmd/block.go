@@ -70,7 +70,7 @@ var blockCmd = &cobra.Command{
 			ip = args[0]
 		}
 
-		fmt.Printf("[DEBUG] IP: %s; Port: %v\n", ip, port)
+		//fmt.Printf("[DEBUG] IP: %s; Port: %v\n", ip, port)
 
 		// Create and Pin / Load pinned bpf resources
 		if err := pkg.CreateLinkIfNotExit(args[1]); err != nil {
@@ -78,14 +78,12 @@ var blockCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Add IP to firewall
+		// Add IP or IP:Port to firewall
 		var err error
-		if isIngress {
-			err = pkg.AddIP(ip, args[1], true)
-		}
-
-		if isEgress {
-			err = pkg.AddIP(ip, args[1], false)
+		if port != 0 {
+			err = pkg.AddIPPort(ip, args[1], uint16(port), isIngress)
+		}else{
+			err = pkg.AddIP(ip, args[1], isIngress)
 		}
 
 		if err != nil {
@@ -108,5 +106,4 @@ func init() {
 	blockCmd.Flags().BoolVarP(&isEgress, "egress", "e", false, "update the egress table")
 	blockCmd.Flags().BoolVarP(&isTCP, "tcp", "t", false, "indicate a tcp rule")
 	blockCmd.Flags().BoolVarP(&isUDP, "udp", "u", false, "indicate a udp rule")
-	//blockCmd.MarkFlagRequired("ingress")
 }

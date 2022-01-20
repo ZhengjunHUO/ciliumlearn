@@ -16,8 +16,9 @@ import (
 /*
 Bitmap: 8 bits
   00000000
-        ||- isBanned
-	|-- isIngress
+       |||- isIngress
+       ||-- isBannedL3
+       |--- isBannedL4
 */
 type entry struct {
 	Saddr	uint32
@@ -26,6 +27,12 @@ type entry struct {
 	Dport	uint16
 	Proto	uint8
 	Bitmap	uint8
+}
+
+type socket struct {
+	Addr	 uint32
+	Port	 uint16
+	Reserved uint16
 }
 
 // Show all rules related to container
@@ -46,6 +53,8 @@ func PrintFirewall(name string) {
 	// load pinned firewalls
 	egressMapPinPath := pinPath + "/egs_map"
 	ingressMapPinPath := pinPath + "/igs_map"
+	egressL4MapPinPath := pinPath + "/egs_l4_map"
+	ingressL4MapPinPath := pinPath + "/igs_l4_map"
 
 	emap, err := ebpf.LoadPinnedMap(egressMapPinPath, nil)
 	if err != nil {
@@ -57,22 +66,45 @@ func PrintFirewall(name string) {
 		return
 	}
 
+	emapL4, err := ebpf.LoadPinnedMap(egressL4MapPinPath, nil)
+	if err != nil {
+		return
+	}
+
+	imapL4, err := ebpf.LoadPinnedMap(ingressL4MapPinPath, nil)
+	if err != nil {
+		return
+	}
+
 	var (
 		key uint32
 		value bool
+		skt socket
 	)
 
 	// Dump all the ingress/egress rules from maps
-	fmt.Println("Blocked egress ips [To]:")
+	fmt.Println("Blocked egress L3 [To]:")
 	entries := emap.Iterate()
 	for entries.Next(&key, &value) {
 		fmt.Printf("\t%s\n", tools.Uint32ToIPv4(key))
 	}
 
-	fmt.Println("\nBlocked ingress ips [From]:")
+	fmt.Println("Blocked egress L4 [To]:")
+	entries = emapL4.Iterate()
+	for entries.Next(&skt, &value) {
+		fmt.Printf("\t%s:%v\n", tools.Uint32ToIPv4(skt.Addr), tools.Uint16ToPort(skt.Port))
+	}
+
+	fmt.Println("\nBlocked ingress L3 [From]:")
 	entries = imap.Iterate()
 	for entries.Next(&key, &value) {
 		fmt.Printf("\t%s\n", tools.Uint32ToIPv4(key))
+	}
+
+	fmt.Println("\nBlocked ingress L4 [From]:")
+	entries = imapL4.Iterate()
+	for entries.Next(&skt, &value) {
+		fmt.Printf("\t%s:%v\n", tools.Uint32ToIPv4(skt.Addr), tools.Uint16ToPort(skt.Port))
 	}
 }
 
@@ -112,7 +144,7 @@ func PrintDataflow(name string) error {
 
 	var ent entry
 	var saddr, daddr, protocolName, entlog string
-	var isIngress, isBanned bool
+	var isIngress, isBannedL3, isBannedL4 bool
 
 	loop: for {
 		select {
@@ -120,7 +152,7 @@ func PrintDataflow(name string) error {
 				// retrieve all the entries from the map
 				for fl.LookupAndDelete(nil, &ent) == nil {
 					saddr, daddr = tools.Uint32ToIPv4(ent.Saddr), tools.Uint32ToIPv4(ent.Daddr)
-					isIngress, isBanned = ((ent.Bitmap & 2) >> 1) == 1, (ent.Bitmap & 1) == 1
+					isIngress, isBannedL3, isBannedL4 = (ent.Bitmap & 1) == 1, ((ent.Bitmap & 2) >> 1) == 1, ((ent.Bitmap & 4) >> 2) == 1
 
 					// identify the protocol name
 					if val, ok := protocols[ent.Proto]; ok {
@@ -147,8 +179,12 @@ func PrintDataflow(name string) error {
 					}
 
 					// update the log if the packet is banned
-					if isBanned {
-						entlog += " (BANNED)"
+					if isBannedL3 {
+						entlog += " (BANNED L3)"
+					}
+
+					if isBannedL4 {
+						entlog += " (BANNED L4)"
 					}
 
 					fmt.Println(entlog)

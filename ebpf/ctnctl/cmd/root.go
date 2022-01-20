@@ -25,8 +25,8 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "ctnctl",
-	Short: "Apply firewall rules to container based on eBPF",
-	Long: `Apply firewall rules to container based on eBPF`,
+	Short: "Apply firewall rules to container based on eBPF Cgroups",
+	Long: `Apply firewall rules to container based on eBPF Cgroups`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

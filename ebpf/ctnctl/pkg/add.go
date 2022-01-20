@@ -48,6 +48,8 @@ func CreateLinkIfNotExit(name string) error {
 	dataflowPinPath := pinPath + "/dataflow_map"
 	egressMapPinPath := pinPath + "/egs_map"
 	ingressMapPinPath := pinPath + "/igs_map"
+	egressL4MapPinPath := pinPath + "/egs_l4_map"
+	ingressL4MapPinPath := pinPath + "/igs_l4_map"
 	egressLinkPinPath := pinPath + "/cgroup_egs_link"
 	ingressLinkPinPath := pinPath + "/cgroup_igs_link"
 
@@ -68,11 +70,15 @@ func CreateLinkIfNotExit(name string) error {
 	// load maps
 	egressMap := collection.Maps[egressMapName]
 	ingressMap := collection.Maps[ingressMapName]
+	egressL4Map := collection.Maps[egressL4MapName]
+	ingressL4Map := collection.Maps[ingressL4MapName]
 	flowMap := collection.Maps[flowMapName]
 
 	// Pin maps
 	egressMap.Pin(egressMapPinPath)
 	ingressMap.Pin(ingressMapPinPath)
+	egressL4Map.Pin(egressL4MapPinPath)
+	ingressL4Map.Pin(ingressL4MapPinPath)
 	flowMap.Pin(dataflowPinPath)
 
 	// attach bpf program to specific cgroup 
@@ -109,13 +115,31 @@ func AddIP(ip, name string, isIngress bool) error {
 	var fw *ebpf.Map
 	bTrue := true
 
-	err := LoadPinnedMap(&fw, name, isIngress)
+	err := LoadPinnedMap(&fw, name, isIngress, true)
 	if err != nil {
 		return err
 	}
 
 	ipToAdd := tools.Ipv4ToUint32(ip)
 	if err := fw.Put(&ipToAdd, &bTrue); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Add an ip:port entry to the ingress/egress l4 firewall (map)
+func AddIPPort(ip, name string, port uint16, isIngress bool) error {
+	var fw *ebpf.Map
+	bTrue := true
+
+	err := LoadPinnedMap(&fw, name, isIngress, false)
+	if err != nil {
+		return err
+	}
+
+	skt := socket{tools.Ipv4ToUint32(ip), tools.Uint16ToPort(port), 0}
+	if err := fw.Put(&skt, &bTrue); err != nil {
 		return err
 	}
 

@@ -56,7 +56,7 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     }
 
     pkt p;
-    // ensure the padding
+    // initialize padding to avoid verifier's complain
     __builtin_memset(&p, 0, sizeof(pkt));
 
     p.saddr = iphd->saddr;

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "bpf_helpers.h"
 
+/* store network packet's info */
 typedef struct {
     __u32 saddr;
     __u32 daddr;
@@ -15,12 +16,14 @@ typedef struct {
     __u8  bitmap;
 } pkt;
 
+/* used as key in L4 blacklist */
 typedef struct {
     __u32 addr;
     __u16 port;
     __u16 reserved;
 } skt;
 
+/* store L3 blacklist rules for ingress */
 struct bpf_map_def SEC("maps") ingress_blacklist = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(__u32),
@@ -28,6 +31,7 @@ struct bpf_map_def SEC("maps") ingress_blacklist = {
     .max_entries = 1000,
 };
 
+/* store L3 blacklist rules for egress */
 struct bpf_map_def SEC("maps") egress_blacklist = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(__u32),
@@ -35,6 +39,7 @@ struct bpf_map_def SEC("maps") egress_blacklist = {
     .max_entries = 1000,
 };
 
+/* store L4 blacklist rules for ingress */
 struct bpf_map_def SEC("maps") ingress_l4_blacklist = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(skt),
@@ -42,6 +47,7 @@ struct bpf_map_def SEC("maps") ingress_l4_blacklist = {
     .max_entries = 1000,
 };
 
+/* store L4 blacklist rules for egress */
 struct bpf_map_def SEC("maps") egress_l4_blacklist = {
     .type = BPF_MAP_TYPE_HASH,
     .key_size = sizeof(skt),
@@ -49,6 +55,7 @@ struct bpf_map_def SEC("maps") egress_l4_blacklist = {
     .max_entries = 1000,
 };
 
+/* store network flow logs for container */
 struct bpf_map_def SEC("maps") data_flow = {
     .type = BPF_MAP_TYPE_QUEUE,
     .key_size = 0,
@@ -56,6 +63,7 @@ struct bpf_map_def SEC("maps") data_flow = {
     .max_entries = 1000,
 };
 
+/* apply saved rules to ingress/egress packets, drop the packet if match */
 static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     void *data = (void*)(long)skb->data;
     void *data_end = (void*)(long)skb->data_end;
@@ -119,6 +127,7 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
 
     p.bitmap = (isBannedL3 << 1) | (isBannedL4 << 2) | isIngress;
 
+    // save logs
     bpf_map_push_elem(&data_flow, &p, BPF_ANY);
 
     // return 0 => drop
@@ -127,7 +136,6 @@ static inline int filter_packet(struct __sk_buff *skb, bool isIngress) {
     }
 
     return 1;
-    //return !isBanned;
 }
 
 SEC("cgroup_skb/ingress")

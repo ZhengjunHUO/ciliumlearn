@@ -1,3 +1,5 @@
+# Migrate to https://github.com/ZhengjunHUO/ctnctl as an independant project
+
 # Apply firewall rules to docker container by attaching eBPF program to its cgroups
 
 ### Developed and tested under: 

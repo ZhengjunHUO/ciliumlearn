@@ -27,9 +27,9 @@ import (
 
 // blockCmd represents the block command
 var blockCmd = &cobra.Command{
-	Use:   "block [flags] <IP> <CONTAINER_NAME|CONTAINER_ID>",
-	Short: "Add an ip to container's blacklist",
-	Long: `Add an ip to container's blacklist`,
+	Use:   "block [flags] <IP[:PORT]> <CONTAINER_NAME|CONTAINER_ID>",
+	Short: "Add an ip/ip:port to container's blacklist",
+	Long: `Add an ip/ip:port to container's blacklist`,
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		// wait a -i or -e flag
@@ -48,12 +48,14 @@ var blockCmd = &cobra.Command{
 		port := 0
 
 		if isTCP {
+			// check if the given IP:PORT is valid
 			if tcpaddr, err := net.ResolveTCPAddr("tcp", args[0]); err != nil {
 				fmt.Println("Not a valid tcp addr: ", err)
 				os.Exit(1)
 			}else{
 				ip, port = tcpaddr.IP.String(), tcpaddr.Port
 			}
+			// check if the given IP:PORT is valid
 		}else if isUDP{
 			if udpaddr, err := net.ResolveUDPAddr("udp", args[0]); err != nil {
 				fmt.Println("Not a valid udp addr: ", err)

@@ -8,22 +8,24 @@ import (
 const (
 	//bpfProgName	= "./pkg/bpf.o"
 
-	egressFuncName  = "egress_filter"
-	ingressFuncName = "ingress_filter"
+	egressFuncName   = "egress_filter"
+	ingressFuncName  = "ingress_filter"
 
-	egressMapName   = "egress_blacklist"
-	ingressMapName  = "ingress_blacklist"
-	egressL4MapName   = "egress_l4_blacklist"
-	ingressL4MapName  = "ingress_l4_blacklist"
-	flowMapName	= "data_flow"
+	egressMapName    = "egress_blacklist"
+	ingressMapName   = "ingress_blacklist"
+	egressL4MapName  = "egress_l4_blacklist"
+	ingressL4MapName = "ingress_l4_blacklist"
+	flowMapName	 = "data_flow"
 
-	bpfPath		= "/sys/fs/bpf/"
+	bpfPath		 = "/sys/fs/bpf/"
 )
 
 var (
 	allLinks	= []string{"/cgroup_egs_link", "/cgroup_igs_link"}
 	allMaps		= []string{"/dataflow_map", "/egs_map", "/igs_map", "/egs_l4_map", "/igs_l4_map"}
 )
+
+// Load compiled bpf bytecode to bpfProgBytes when compiling the Go program
 
 //go:embed bpf.o
 var bpfProgBytes []byte

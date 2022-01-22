@@ -29,6 +29,7 @@ type entry struct {
 	Bitmap	uint8
 }
 
+// Reserved principally for padding propose
 type socket struct {
 	Addr	 uint32
 	Port	 uint16

@@ -19,6 +19,7 @@ func CreateLinkIfNotExit(name string) error {
 	if len(cgroupId) == 0 {
 		return errors.New("Invalid container name or id!\n")
 	}
+
 	// Get related cgroup (v2, docker use systemd driver by default) path
 	cgroupPath := "/sys/fs/cgroup/system.slice/docker-"+cgroupId+".scope"
 	/*
@@ -35,7 +36,7 @@ func CreateLinkIfNotExit(name string) error {
 		return nil
 	}
 
-	/* remove ebpf lock memory limit */
+	// remove ebpf lock memory limit
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return err
 	}
@@ -64,17 +65,19 @@ func CreateLinkIfNotExit(name string) error {
 	if err != nil {
 		return err
 	}
+
+	// get functions from bpf program
 	ingressFunc := collection.Programs[ingressFuncName]
 	egressFunc := collection.Programs[egressFuncName]
 
-	// load maps
+	// get maps from bpf program
 	egressMap := collection.Maps[egressMapName]
 	ingressMap := collection.Maps[ingressMapName]
 	egressL4Map := collection.Maps[egressL4MapName]
 	ingressL4Map := collection.Maps[ingressL4MapName]
 	flowMap := collection.Maps[flowMapName]
 
-	// Pin maps
+	// pin maps to bpffs
 	egressMap.Pin(egressMapPinPath)
 	ingressMap.Pin(ingressMapPinPath)
 	egressL4Map.Pin(egressL4MapPinPath)
@@ -115,11 +118,13 @@ func AddIP(ip, name string, isIngress bool) error {
 	var fw *ebpf.Map
 	bTrue := true
 
+	// load pinned map from bpffs
 	err := LoadPinnedMap(&fw, name, isIngress, true)
 	if err != nil {
 		return err
 	}
 
+	// add new rule to pinned map
 	ipToAdd := tools.Ipv4ToUint32(ip)
 	if err := fw.Put(&ipToAdd, &bTrue); err != nil {
 		return err
@@ -133,11 +138,13 @@ func AddIPPort(ip, name string, port uint16, isIngress bool) error {
 	var fw *ebpf.Map
 	bTrue := true
 
+	// load pinned map from bpffs
 	err := LoadPinnedMap(&fw, name, isIngress, false)
 	if err != nil {
 		return err
 	}
 
+	// add new rule to pinned map
 	skt := socket{tools.Ipv4ToUint32(ip), tools.Uint16ToPort(port), 0}
 	if err := fw.Put(&skt, &bTrue); err != nil {
 		return err

@@ -13,6 +13,7 @@ func LoadPinnedMap(loadedMap **ebpf.Map, name string, isIngress, isL3 bool) erro
                 return errors.New("Invalid container name or id!\n")
         }
 
+	// Compose the path according the args
 	var path string
 	pinPath := bpfPath + cgroupId
 	if isL3 {
@@ -29,7 +30,7 @@ func LoadPinnedMap(loadedMap **ebpf.Map, name string, isIngress, isL3 bool) erro
 		}
 	}
 
-	// Load pinned map
+	// Load pinned map using "path"
 	ret, err := ebpf.LoadPinnedMap(path, nil)
         if err != nil {
                 return err

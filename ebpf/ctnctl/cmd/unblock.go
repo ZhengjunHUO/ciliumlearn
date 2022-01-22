@@ -48,6 +48,7 @@ var unblockCmd = &cobra.Command{
 		port := 0
 
 		if isTCPUnb {
+			// check if the given IP:PORT is valid
 			if tcpaddr, err := net.ResolveTCPAddr("tcp", args[0]); err != nil {
 				fmt.Println("Not a valid tcp addr: ", err)
 				os.Exit(1)
@@ -55,6 +56,7 @@ var unblockCmd = &cobra.Command{
 				ip, port = tcpaddr.IP.String(), tcpaddr.Port
 			}
 		}else if isUDPUnb{
+			// check if the given IP:PORT is valid
 			if udpaddr, err := net.ResolveUDPAddr("udp", args[0]); err != nil {
 				fmt.Println("Not a valid udp addr: ", err)
 				os.Exit(1)
@@ -69,17 +71,6 @@ var unblockCmd = &cobra.Command{
 			}
 			ip = args[0]
 		}
-		// Add IP to firewall
-		//var err error
-		//if isIngressUnb {
-		//	err = pkg.DelIP(args[0], args[1], true)
-		//	pkg.DelIP(args[0], args[1], isIngressUnb)
-		//}
-
-		//if isEgressUnb {
-		//	err = pkg.DelIP(args[0], args[1], false)
-		//	pkg.DelIP(args[0], args[1], false)
-		//}
 
 		var err error
 		if port != 0 {
@@ -92,12 +83,6 @@ var unblockCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		/*
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		*/
 	},
 }
 

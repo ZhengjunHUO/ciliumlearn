@@ -30,6 +30,7 @@ var clearCmd = &cobra.Command{
 	Long: `Clear container's firewall rules`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		// Remove all related firewall rules associatd to container
 		if err := pkg.RemovePinnedResource(args[0]); err != nil {
 			fmt.Println(err)
 		}
